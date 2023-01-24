@@ -1,0 +1,10 @@
+# IDE files
+.idea/
+
+# Build folder
+build/
+dist/
+pyagentx2.egg-info/
+
+# Others
+test/.pytest_cache/

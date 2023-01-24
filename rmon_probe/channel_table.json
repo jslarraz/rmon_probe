@@ -1,0 +1,108 @@
+{
+  "1.3.6.1.2.1.16.7.2.1.1.1": {
+    "name": "channelIndex",
+    "syntax": "Integer32",
+    "syntax-code": 2,
+    "min-value": 1,
+    "max-value": 65535,
+    "max-access": "read-only",
+    "access-code": 1
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.2": {
+    "name": "channelIfIndex",
+    "syntax": "Integer32",
+    "syntax-code": 2,
+    "min-value": 1,
+    "max-value": 65535,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.3": {
+    "name": "channelAcceptType",
+    "syntax": "INTEGER",
+    "syntax-code": 2,
+    "min-value": 1,
+    "max-value": 2,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.4": {
+    "name": "channelDataControl",
+    "syntax": "INTEGER",
+    "syntax-code": 2,
+    "min-value": 1,
+    "max-value": 2,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.5": {
+    "name": "channelTurnOnEventIndex",
+    "syntax": "Integer32",
+    "syntax-code": 2,
+    "min-value": 0,
+    "max-value": 65535,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.6": {
+    "name": "channelTurnOffEventIndex",
+    "syntax": "Integer32",
+    "syntax-code": 2,
+    "min-value": 0,
+    "max-value": 65535,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.7": {
+    "name": "channelEventIndex",
+    "syntax": "Integer32",
+    "syntax-code": 2,
+    "min-value": 0,
+    "max-value": 65535,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.8": {
+    "name": "channelEventStatus",
+    "syntax": "INTEGER",
+    "syntax-code": 2,
+    "min-value": 1,
+    "max-value": 3,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.9": {
+    "name": "channelMatches",
+    "syntax": "Counter32",
+    "syntax-code": 65,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.10": {
+    "name": "channelDescription",
+    "syntax": "DisplayString",
+    "syntax-code": 4,
+    "min-length": 0,
+    "max-length": 127,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.11": {
+    "name": "channelOwner",
+    "syntax": "OwnerString",
+    "syntax-code": 4,
+    "min-length": 0,
+    "max-length": 127,
+    "max-access": "read-create",
+    "access-code": 2
+  },
+  "1.3.6.1.2.1.16.7.2.1.1.12": {
+    "name": "channelStatus",
+    "syntax": "EntryStatus",
+    "syntax-code": 2,
+    "min-value": 1,
+    "max-value": 4,
+    "max-access": "read-create",
+    "access-code": 2
+  }
+}

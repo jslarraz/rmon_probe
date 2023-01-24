@@ -1,0 +1,87 @@
+{
+    "1.3.6.1.2.1.16.7.1.1.1.1": {
+      "name": "filterIndex",
+      "syntax": "Integer32",
+      "syntax-code": 2,
+      "min-value": 1,
+      "max-value": 65535,
+      "max-access": "read-only",
+      "access-code": 1
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.2": {
+      "name": "filterChannelIndex",
+      "syntax": "Integer32",
+      "syntax-code": 2,
+      "min-value": 1,
+      "max-value": 65535,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.3": {
+      "name": "filterPktDataOffset",
+      "syntax": "Integer32",
+      "syntax-code": 2,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.4": {
+      "name": "filterPktData",
+      "syntax": "OCTET STRING",
+      "syntax-code": 4,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.5": {
+      "name": "filterPktDataMask",
+      "syntax": "OCTET STRING",
+      "syntax-code": 4,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.6": {
+      "name": "filterPktDataNotMask",
+      "syntax": "OCTET STRING",
+      "syntax-code": 4,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.7": {
+      "name": "filterPktStatus",
+      "syntax": "Integer32",
+      "syntax-code": 2,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.8": {
+      "name": "filterPktStatusMask",
+      "syntax": "Integer32",
+      "syntax-code": 2,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.9": {
+      "name": "filterPktStatusNotMask",
+      "syntax": "Integer32",
+      "syntax-code": 2,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.10": {
+      "name": "filterOwner",
+      "syntax": "OwnerString",
+      "syntax-code": 4,
+      "min-length": 0,
+      "max-length": 127,
+      "max-access": "read-create",
+      "access-code": 2
+    },
+    "1.3.6.1.2.1.16.7.1.1.1.11": {
+      "name": "filterStatus",
+      "syntax": "EntryStatus",
+      "syntax-code": 2,
+      "min-value": 1,
+      "max-value": 4,
+      "max-access": "read-create",
+      "access-code": 2
+    }
+}

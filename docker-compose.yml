@@ -1,0 +1,39 @@
+version: '3.3'
+
+services:
+  db:
+    image: mariadb:latest
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - rmon_network
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: toor
+      MARIADB_DATABASE: rmon
+      MARIADB_USER: rmon
+      MARIADB_PASSWORD: rmon
+
+  rmon:
+    depends_on:
+      - db
+    build: .
+    command: bash -c "/tmp/start_snmpd.sh && python3 rmon_agent.py"
+    networks:
+      - rmon_network
+    ports:
+      - "161:161/udp"
+    restart: always
+    environment:
+      MARIADB_HOST: db
+      MARIADB_DATABASE: rmon
+      MARIADB_USER: rmon
+      MARIADB_NAME: rmon
+      RW_COMMUNITY: private
+      RMON_MAX_FILTERS: 50
+
+volumes:
+    db_data: {}
+
+networks:
+  rmon_network:
