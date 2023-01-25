@@ -6,7 +6,7 @@ import logging
 class NullHandler(logging.Handler):
     def emit(self, record):
         pass
-logger = logging.getLogger('pyagentx2.sethandler')
+logger = logging.getLogger('rmon_probe.rmonTableSetHandler')
 logger.addHandler(NullHandler())
 # --------------------------------------------
 
@@ -18,9 +18,9 @@ from pyagentx2 import SetHandler, GenErrException, NoAccessException, WrongTypeE
 
 class RmonTableSetHandler(SetHandler):
 
-    def __init__(self):
+    def __init__(self, schema_file):
         SetHandler.__init__(self)
-        schema = open("rmon_probe/filter_table.json").read()
+        schema = open(schema_file).read()
         try:
             self.schema = json.loads(schema)
             self.schema_idx = sorted(self.schema.keys(), key=lambda k: tuple(int(part) for part in k.split('.')))

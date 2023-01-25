@@ -1,1 +1,1 @@
-pyagentx2==1.0.6
+pyagentx2==1.0.10

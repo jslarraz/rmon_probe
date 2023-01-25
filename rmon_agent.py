@@ -16,6 +16,7 @@ snmpset -v 2c -c public localhost NET-SNMP-EXAMPLES-MIB::netSnmpExampleString.0 
 
 import pyagentx2
 from rmon_probe.rmonTableSetHandler import RmonTableSetHandler
+from rmon_probe.MIB_MySQL import MIB_MYSQL
 
 class FilterTableUpdater(pyagentx2.Updater):
 
@@ -53,20 +54,27 @@ class FilterTableSetHandler(RmonTableSetHandler):
 #         mib.set(oid, type, value)
 
 
+
+
 class MyAgent(pyagentx2.Agent):
+
+    def __init__(self):
+        super(MyAgent, self).__init__()
+        self.mib = MIB_MYSQL("rmon_probe/mysql_config.sql")
 
     def setup(self):
 
-        self.register('1.3.6.1.2.1.16.7.1', FilterTableUpdater)
-        self.register_set('1.3.6.1.2.1.16.7.1', RmonTableSetHandler)
+        self.register('1.3.6.1.2.1.16.7.1')
+        self.register_updater('1.3.6.1.2.1.16.7.1', FilterTableUpdater)
+        self.register_set('1.3.6.1.2.1.16.7.1', RmonTableSetHandler, "rmon_probe/filter_table.json")
 
         # self.register('1.3.6.1.2.1.16.7.2', ChannelTableUpdater)
         # self.register_set('1.3.6.1.2.1.16.7.2', ChannelTableSetHandler)
 
 def main():
     pyagentx2.setup_logging(debug=True)
+    a = MyAgent()
     try:
-        a = MyAgent()
         a.start()
     except Exception as e:
         print("Unhandled exception:", e)

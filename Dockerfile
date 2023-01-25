@@ -8,8 +8,8 @@ RUN apt-get update
 RUN apt-get -y install apt-utils
 
 # Install python (v2.7)
-RUN apt-get -y install python3
-RUN apt-get -y install python3-pip
+RUN apt-get -y install python
+RUN apt-get -y install python-pip
 
 # Install MySQL client
 RUN apt-get -y install mariadb-client
@@ -21,14 +21,14 @@ RUN apt-get -y install python-libpcap
 
 # Install python requirements
 ADD requirements.txt /tmp
-RUN pip3 install -r /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
 
 # Copy project files to working directory
 WORKDIR /tmp
 ADD . .
 
 EXPOSE 161/udp
-CMD /tmp/start_snmpd.sh && python3 rmon_agent.py
+CMD /tmp/start_snmpd.sh && python rmon_agent.py
 
 
 

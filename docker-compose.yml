@@ -18,7 +18,7 @@ services:
     depends_on:
       - db
     build: .
-    command: bash -c "/tmp/start_snmpd.sh && python3 rmon_agent.py"
+    command: bash -c "/tmp/start_snmpd.sh && python rmon_agent.py"
     networks:
       - rmon_network
     ports:
@@ -28,7 +28,7 @@ services:
       MARIADB_HOST: db
       MARIADB_DATABASE: rmon
       MARIADB_USER: rmon
-      MARIADB_NAME: rmon
+      MARIADB_PASS: rmon
       RW_COMMUNITY: private
       RMON_MAX_FILTERS: 50
 
