@@ -160,5 +160,9 @@ class RmonTableSetHandler(SetHandler):
 
 
     def valid(self, oid, type, value, mib):
-        print("CREATING NEW FILTER")
+        print("CREATING FILTER")
+        pass
+
+    def invalid(self, oid, type, value, mib):
+        print("REMOVING FILTER")
         pass

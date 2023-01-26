@@ -60,7 +60,7 @@ class MyAgent(pyagentx2.Agent):
 
     def __init__(self):
         super(MyAgent, self).__init__()
-        self.mib = MIB_MYSQL("rmon_probe/mysql_config.sql")
+        self.mib = MIB_MYSQL()
 
     def setup(self):
 
