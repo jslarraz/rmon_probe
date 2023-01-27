@@ -9,14 +9,13 @@ class filter():
     # Funciones Publicas #
     ######################
     
-    def __init__(self, N_FILTROS, BBDD, interfaces):
+    def __init__(self, interfaces, mib, index):
         # Creamos las variables
-        self.N_FILTROS = N_FILTROS
-        self.BBDD = BBDD
         self.interfaces = interfaces
-        self.matches = Array('i', [0]*self.N_FILTROS)
-        self.process = [0]*self.N_FILTROS
-        self.indices = [0]*self.N_FILTROS
+        self.mib = mib
+        self.index = index
+
+
 
 
     def start(self):
@@ -109,124 +108,101 @@ class filter():
     ######################
 
 
-    def busca_memoria(self):
-        ind = None
-        for i in range(len(self.indices)):
-            if self.indices[i] == 0:
-                ind = i
-                break
-        return ind
+    def genera_filtro(self, channel_index, mib):
 
-    def genera_filtro(self, index):
-
-        filterIndex = []            
-        filterPktDataOffset = []
-        filterPktData = []
-        filterPktDataMask = []
-        filterPktDataNotMask = []
-        filterPktStatus = []
-        filterPktStatusMask = []
-        filterPktStatusNotMask = []
         filtro = ""
-        interfaz = ""
-        status = 1
 
-        db_rmon=MySQLdb.connect(host=self.BBDD.ADDR,user=self.BBDD.USER,passwd=self.BBDD.PASS, db="rmon")
-        db_rmon.autocommit(True)
-        cursor = db_rmon.cursor()
+        channelIfIndex = mib.get("1.3.6.1.2.1.16.7.2.1.1.2." + channel_index)
+        channelAcceptType = mib.get("1.3.6.1.2.1.16.7.2.1.1.3." + channel_index)
+        channelMatches = mib.get("1.3.6.1.2.1.16.7.2.1.1.9." + channel_index)
+        if None in [channelIfIndex, channelAcceptType, channelMatches]:
+            raise # TODO
 
-        cursor.execute("SELECT * FROM td_channelEntry WHERE channelIndex = %s", (index,) )
-        result = cursor.fetchone()
-        if str(result) != "None":
-            channelIfIndex = result[1]
-            channelAcceptType = result[2]
-            channelMatches = result[8]
-            try:
-                interfaz = self.interfaces[str(channelIfIndex)]
-                # interfaz = subprocess.check_output(["snmpget", "-v", "1", "-c", "public", "localhost:162", "1.3.6.1.2.1.2.2.1.2." + str(channelIfIndex)])
-                # interfaz = interfaz.split("\"")
-                # interfaz = interfaz[1]
-            except:
-                status = 0
-                print("Error al conseguir el interfaz")
+        try:
+            interfaz = self.interfaces[str(channelIfIndex)]
+            # interfaz = subprocess.check_output(["snmpget", "-v", "1", "-c", "public", "localhost:162", "1.3.6.1.2.1.2.2.1.2." + str(channelIfIndex)])
+            # interfaz = interfaz.split("\"")
+            # interfaz = interfaz[1]
+        except:
+            print("Error al conseguir el interfaz")
+            raise # TODO
 
-            cursor.execute("SELECT * FROM td_filterEntry WHERE filterChannelIndex = %s and filterStatus = \'1\'", (index,) )
-            result = cursor.fetchall()
-            if str(result) != "()":
+        # Get list of filter indexses
+        indexes = []
+        for oid, type, value in mib:
+            if oid.startswith("1.3.6.1.2.1.16.7.1.1.1.2.") and (value == channel_index):
+                filter_index = int(oid.split(".")[-1])
+                if mib.get("1.3.6.1.2.1.16.7.1.1.1.11." + str(filter_index))['value'] == 1:
+                    indexes.append(filter_index)
 
-                if channelAcceptType == 1:
 
-                    for i in range(len(result)):
-                    
-                        filterIndex.append(result[i][0])
-                        filterPktDataOffset.append(result[i][2])
-                        filterPktData.append(result[i][3])
-                        filterPktDataMask.append(result[i][4])
-                        filterPktDataNotMask.append(result[i][5])
-                        filterPktStatus.append(result[i][6])
-                        filterPktStatusMask.append(result[i][7])
-                        filterPktStatusNotMask.append(result[i][8])
+        if channelAcceptType == 1:
 
-                        filtro = filtro + "("
+            for i in range(len(indexes)):
+                filter_index = indexes[i]
 
-                        for j in range(len(result[i][4])):
-                            data = int(ord(result[i][3][j]))
-                            mask = int(ord(result[i][4][j]))
-                            notMask = int(ord(result[i][5][j]))
-                            resultado = (data & ~notMask) | (~data & notMask)
+                filterIndex = mib.get("1.3.6.1.2.1.16.7.1.1.1.1." + str(filter_index))['value']
+                filterPktDataOffset = mib.get("1.3.6.1.2.1.16.7.1.1.3.1." + str(filter_index))['value']
+                filterPktData= mib.get("1.3.6.1.2.1.16.7.1.1.1.4." + str(filter_index))['value']
+                filterPktDataMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.5." + str(filter_index))['value']
+                filterPktDataNotMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.6." + str(filter_index))['value']
+                filterPktStatus = mib.get("1.3.6.1.2.1.16.7.1.1.1.7." + str(filter_index))['value']
+                filterPktStatusMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.8." + str(filter_index))['value']
+                filterPktStatusNotMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.9." + str(filter_index))['value']
 
-                            filtro = filtro + "((ether[" + str(int(filterPktDataOffset[i]) + j ) + "] & " + str(mask) + ") == " + str(resultado) + ")"
-                            if j != len(result[i][4])-1:
-                                filtro = filtro + " and "
-                            
-                        if i != len(result)-1:
-                            filtro = filtro + ") or "
+                filtro = filtro + "("
 
-                    filtro = filtro + ")"
+                for j in range(len(filterPktDataMask)):
+                    data = int(ord(filterPktData[j]))
+                    mask = int(ord(filterPktDataMask[j]))
+                    notMask = int(ord(filterPktDataNotMask[j]))
+                    resultado = (data & ~notMask) | (~data & notMask)
 
-                elif channelAcceptType == 2:
+                    filtro = filtro + "((ether[" + str(int(filterPktDataOffset) + j ) + "] & " + str(mask) + ") == " + str(resultado) + ")"
+                    if j != len(filterPktDataMask)-1:
+                        filtro = filtro + " and "
 
-                    for i in range(len(result)):
-                    
-                        filterIndex.append(result[i][0])
-                        filterPktDataOffset.append(result[i][2])
-                        filterPktData.append(result[i][3])
-                        filterPktDataMask.append(result[i][4])
-                        filterPktDataNotMask.append(result[i][5])
-                        filterPktStatus.append(result[i][6])
-                        filterPktStatusMask.append(result[i][7])
-                        filterPktStatusNotMask.append(result[i][8])
+                if i != len(indexes)-1:
+                    filtro = filtro + ") or "
 
-                        filtro = filtro + "("
+            filtro = filtro + ")"
 
-                        for j in range(len(result[i][4])):
-                            data = int(ord(result[i][3][j]))
-                            mask = int(ord(result[i][4][j]))
-                            notMask = int(ord(result[i][5][j]))
-                            resultado = (data & ~notMask) | (~data & notMask)
+        elif channelAcceptType == 2:
 
-                            filtro = filtro + "((ether[" + str(int(filterPktDataOffset[i]) + j ) + "] & " + str(mask) + ") != " + str(resultado) + ")"
-                            if j != len(result[i][4])-1:
-                                filtro = filtro + " or "
-                            
-                        if i != len(result)-1:
-                            filtro = filtro + ") and "
+            for i in range(len(indexes)):
+                filter_index = indexes[i]
 
-                    filtro = filtro + ")"
+                filterIndex = mib.get("1.3.6.1.2.1.16.7.1.1.1.1." + str(filter_index))['value']
+                filterPktDataOffset = mib.get("1.3.6.1.2.1.16.7.1.1.3.1." + str(filter_index))['value']
+                filterPktData= mib.get("1.3.6.1.2.1.16.7.1.1.1.4." + str(filter_index))['value']
+                filterPktDataMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.5." + str(filter_index))['value']
+                filterPktDataNotMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.6." + str(filter_index))['value']
+                filterPktStatus = mib.get("1.3.6.1.2.1.16.7.1.1.1.7." + str(filter_index))['value']
+                filterPktStatusMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.8." + str(filter_index))['value']
+                filterPktStatusNotMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.9." + str(filter_index))['value']
 
-                else:
-                    status = 0
-                    print("channelAcceptType no valido")
-                                               
-            else:
-                status = 0
-                print("No hay ningun filtro configurado")
+                filtro = filtro + "("
+
+                for j in range(len(filterPktDataMask)):
+                    data = int(ord(filterPktData[j]))
+                    mask = int(ord(filterPktDataMask[j]))
+                    notMask = int(ord(filterPktDataNotMask[j]))
+                    resultado = (data & ~notMask) | (~data & notMask)
+
+                    filtro = filtro + "((ether[" + str(int(filterPktDataOffset) + j ) + "] & " + str(mask) + ") != " + str(resultado) + ")"
+                    if j != len(filterPktDataMask)-1:
+                        filtro = filtro + " or "
+
+                if i != len(indexes)-1:
+                    filtro = filtro + ") and "
+
+            filtro = filtro + ")"
 
         else:
-            status = 0
-            print("Error al acceder a la base de datos 1")
+            print("channelAcceptType no valido")
+            raise # TODO
 
-        return status, channelMatches, interfaz, filtro
+        return channelMatches, interfaz, filtro
 
 
 

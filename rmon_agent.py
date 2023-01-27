@@ -18,42 +18,24 @@ import pyagentx2
 from rmon_probe.rmonTableSetHandler import RmonTableSetHandler
 from rmon_probe.MIB_MySQL import MIB_MYSQL
 
-class FilterTableUpdater(pyagentx2.Updater):
 
-    def update(self, mib):
-        # implement netSnmpIETFWGTable from NET-SNMP-EXAMPLES-MIB.txt
-        # Number of entries in table is random to show that MIB is reset
-        # on every update
-        # mib.set_INTEGER('1.3.6.1.2.1.16.7.1.1.1.11.100', 100)
-        pass
+class ChannelTableSetHandler(RmonTableSetHandler):
 
-class FilterTableSetHandler(RmonTableSetHandler):
+    def __init__(self, schema_file, mib):
+        super(ChannelTableSetHandler, self).__init__(schema_file)
+        self._filters = []
+
+        for oid, type, value in mib:
+            if oid.startswith(self.status_oid):
+                row_index = oid.split(".")[-1]
+                for prefix in self.schema_idx:
+                    aux = prefix + "." + row_index
 
     def valid(self, oid, type, value, mib):
         print("VALID FILTER CALLED: %s = %s" % (oid, value))
 
-
-# class ChannelTableUpdater(pyagentx2.Updater):
-#
-#     def update(self, mib):
-#         # implement netSnmpIETFWGTable from NET-SNMP-EXAMPLES-MIB.txt
-#         # Number of entries in table is random to show that MIB is reset
-#         # on every update
-#         mib.set_INTEGER('1.3.6.1.2.1.16.7.2.1.1.11.200', 200)
-#         print(mib.get_oids())
-#
-# class ChannelTableSetHandler(pyagentx2.SetHandler):
-#
-#     def test(self, oid, type, value, mib):
-#         pass
-#         # if int(data) > 100:
-#         #     raise pyagentx2.SetHandlerError()
-#
-#     def commit(self, oid, type, value, mib):
-#         print("COMMIT CHANNEL CALLED: %s = %s" % (oid, value))
-#         mib.set(oid, type, value)
-
-
+    def invalid(self, oid, type, value, mib):
+        print("VALID FILTER CALLED: %s = %s" % (oid, value))
 
 
 class MyAgent(pyagentx2.Agent):
@@ -65,11 +47,10 @@ class MyAgent(pyagentx2.Agent):
     def setup(self):
 
         self.register('1.3.6.1.2.1.16.7.1')
-        self.register_updater('1.3.6.1.2.1.16.7.1', FilterTableUpdater)
         self.register_set('1.3.6.1.2.1.16.7.1', RmonTableSetHandler, "rmon_probe/filter_table.json")
 
-        # self.register('1.3.6.1.2.1.16.7.2', ChannelTableUpdater)
-        # self.register_set('1.3.6.1.2.1.16.7.2', ChannelTableSetHandler)
+        self.register('1.3.6.1.2.1.16.7.2')
+        self.register_set('1.3.6.1.2.1.16.7.2', ChannelTableSetHandler, "rmon_probe/channel_table.json", self.mib)
 
 def main():
     pyagentx2.setup_logging(debug=True)
