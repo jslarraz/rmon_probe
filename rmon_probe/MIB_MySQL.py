@@ -68,7 +68,7 @@ class MIB_MYSQL(MIB):
         self.cursor.execute("SELECT * FROM mib;")
         result = self.cursor.fetchall()
         for oid, type, value in result:
-            if type == 2:   # TODO add support for more data types
+            if (type == 2) or (type == 65):   # TODO add support for more data types
                 value = int(value)
             self.data[oid] = {'name': oid, 'type': type, 'value': value}
         self.data_idx = sorted(self.data.keys(), key=lambda k: tuple(int(part) for part in k.split('.')))
@@ -76,8 +76,9 @@ class MIB_MYSQL(MIB):
     def set(self, oid, type, value):
         super(MIB_MYSQL, self).set(oid, type, value)
         try:
-            self.cursor.execute('INSERT INTO ' + self.table_name + ' (oid, type, value) VALUES ("' + oid + '", ' + str(type) + ', "' + str(value) + '") ON DUPLICATE KEY UPDATE type=' + str(type) + ', value="' + str(value) + '";')
+            self.cursor.execute('INSERT INTO ' + self.table_name + ' (oid, type, value) VALUES ("%(oid)s", %(type)s, "%(value)s") ON DUPLICATE KEY UPDATE type=%(type)s, value="%(value)s";' % {"oid": oid, "type": type, "value": value})
         except:
+            print("error")
             logger.error("Error creating/updating entry oid " + oid + " with type " + str(type) + " and value " + str(value))
 
     def delete_oid(self, oid):
@@ -86,3 +87,4 @@ class MIB_MYSQL(MIB):
             self.cursor.execute('DELETE FROM ' + self.table_name + ' WHERE oid = "' + oid + '";')
         except:
             logger.error("Error deleting entry with oid " + oid)
+

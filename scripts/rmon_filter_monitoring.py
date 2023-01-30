@@ -6,7 +6,7 @@ import os
 ip_addr = os.environ.get('ip_addr', 'localhost')			# Direccion IP
 port = os.environ.get('port', 161)							# Puerto
 interface_name = os.environ.get('interface_name', 'eth0')	# Interface
-community = os.environ.get('community', 'public')			# Comunidad
+community = os.environ.get('community', 'private')			# Comunidad
 
 # Numero de filtros
 n = 32

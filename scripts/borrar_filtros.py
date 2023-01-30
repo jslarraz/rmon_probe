@@ -5,7 +5,7 @@ import os
 
 ip_addr = os.environ.get('ip_addr', 'localhost')			# Direccion IP
 port = os.environ.get('port', 161)							# Puerto
-community = os.environ.get('community', 'public')			# Comunidad
+community = os.environ.get('community', 'private')			# Comunidad
 eng = snmp_engine('1', community, ip_addr, port)             # Create engine
 
 for i in range(32):

@@ -1,19 +1,30 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# --------------------------------------------
+import logging
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+logger = logging.getLogger('rmon_probe.filter')
+logger.addHandler(NullHandler())
+# --------------------------------------------
+
 import MySQLdb
-from scapy.all import *
+# from scapy.all import *
 from multiprocessing import Process, Value, Array
 import pcap
 
-class filter():
+class Filter():
 
     ######################
     # Funciones Publicas #
     ######################
     
-    def __init__(self, interfaces, mib, index):
+    def __init__(self, mib, interfaces=None):
         # Creamos las variables
         self.interfaces = interfaces
         self.mib = mib
-        self.index = index
 
 
 
@@ -108,47 +119,48 @@ class filter():
     ######################
 
 
-    def genera_filtro(self, channel_index, mib):
+    def genera_filtro(self, channel_index):
+        logger.debug("GENERA FILTRO")
 
+        interface = None
         filtro = ""
 
-        channelIfIndex = mib.get("1.3.6.1.2.1.16.7.2.1.1.2." + channel_index)
-        channelAcceptType = mib.get("1.3.6.1.2.1.16.7.2.1.1.3." + channel_index)
-        channelMatches = mib.get("1.3.6.1.2.1.16.7.2.1.1.9." + channel_index)
+        channelIfIndex = self.mib.get("1.3.6.1.2.1.16.7.2.1.2." + str(channel_index))['value']
+        channelAcceptType = self.mib.get("1.3.6.1.2.1.16.7.2.1.3." + str(channel_index))['value']
+        channelMatches = self.mib.get("1.3.6.1.2.1.16.7.2.1.9." + str(channel_index))['value']
         if None in [channelIfIndex, channelAcceptType, channelMatches]:
             raise # TODO
 
-        try:
-            interfaz = self.interfaces[str(channelIfIndex)]
-            # interfaz = subprocess.check_output(["snmpget", "-v", "1", "-c", "public", "localhost:162", "1.3.6.1.2.1.2.2.1.2." + str(channelIfIndex)])
-            # interfaz = interfaz.split("\"")
-            # interfaz = interfaz[1]
-        except:
-            print("Error al conseguir el interfaz")
-            raise # TODO
+        # try:
+        #     interfaz = self.interfaces[str(channelIfIndex)]
+        #     # interfaz = subprocess.check_output(["snmpget", "-v", "1", "-c", "public", "localhost:162", "1.3.6.1.2.1.2.2.1.2." + str(channelIfIndex)])
+        #     # interfaz = interfaz.split("\"")
+        #     # interfaz = interfaz[1]
+        # except:
+        #     print("Error al conseguir el interfaz")
+        #     raise # TODO
 
         # Get list of filter indexses
         indexes = []
-        for oid, type, value in mib:
-            if oid.startswith("1.3.6.1.2.1.16.7.1.1.1.2.") and (value == channel_index):
+        for oid, type, value in self.mib:
+            if oid.startswith("1.3.6.1.2.1.16.7.1.1.2.") and (value == channel_index):
                 filter_index = int(oid.split(".")[-1])
-                if mib.get("1.3.6.1.2.1.16.7.1.1.1.11." + str(filter_index))['value'] == 1:
+                if self.mib.get("1.3.6.1.2.1.16.7.1.1.11." + str(filter_index))['value'] == 1:
                     indexes.append(filter_index)
-
 
         if channelAcceptType == 1:
 
             for i in range(len(indexes)):
                 filter_index = indexes[i]
 
-                filterIndex = mib.get("1.3.6.1.2.1.16.7.1.1.1.1." + str(filter_index))['value']
-                filterPktDataOffset = mib.get("1.3.6.1.2.1.16.7.1.1.3.1." + str(filter_index))['value']
-                filterPktData= mib.get("1.3.6.1.2.1.16.7.1.1.1.4." + str(filter_index))['value']
-                filterPktDataMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.5." + str(filter_index))['value']
-                filterPktDataNotMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.6." + str(filter_index))['value']
-                filterPktStatus = mib.get("1.3.6.1.2.1.16.7.1.1.1.7." + str(filter_index))['value']
-                filterPktStatusMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.8." + str(filter_index))['value']
-                filterPktStatusNotMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.9." + str(filter_index))['value']
+                filterIndex = self.mib.get("1.3.6.1.2.1.16.7.1.1.1." + str(filter_index))['value']
+                filterPktDataOffset = self.mib.get("1.3.6.1.2.1.16.7.1.1.3." + str(filter_index))['value']
+                filterPktData= self.mib.get("1.3.6.1.2.1.16.7.1.1.4." + str(filter_index))['value']
+                filterPktDataMask = self.mib.get("1.3.6.1.2.1.16.7.1.1.5." + str(filter_index))['value']
+                filterPktDataNotMask = self.mib.get("1.3.6.1.2.1.16.7.1.1.6." + str(filter_index))['value']
+                filterPktStatus = self.mib.get("1.3.6.1.2.1.16.7.1.1.7." + str(filter_index))['value']
+                filterPktStatusMask = self.mib.get("1.3.6.1.2.1.16.7.1.1.8." + str(filter_index))['value']
+                filterPktStatusNotMask = self.mib.get("1.3.6.1.2.1.16.7.1.1.9." + str(filter_index))['value']
 
                 filtro = filtro + "("
 
@@ -172,14 +184,14 @@ class filter():
             for i in range(len(indexes)):
                 filter_index = indexes[i]
 
-                filterIndex = mib.get("1.3.6.1.2.1.16.7.1.1.1.1." + str(filter_index))['value']
-                filterPktDataOffset = mib.get("1.3.6.1.2.1.16.7.1.1.3.1." + str(filter_index))['value']
-                filterPktData= mib.get("1.3.6.1.2.1.16.7.1.1.1.4." + str(filter_index))['value']
-                filterPktDataMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.5." + str(filter_index))['value']
-                filterPktDataNotMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.6." + str(filter_index))['value']
-                filterPktStatus = mib.get("1.3.6.1.2.1.16.7.1.1.1.7." + str(filter_index))['value']
-                filterPktStatusMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.8." + str(filter_index))['value']
-                filterPktStatusNotMask = mib.get("1.3.6.1.2.1.16.7.1.1.1.9." + str(filter_index))['value']
+                filterIndex = self.mib.get("1.3.6.1.2.1.16.7.1.1.1." + str(filter_index))['value']
+                filterPktDataOffset = self.mib.get("1.3.6.1.2.1.16.7.1.1.3." + str(filter_index))['value']
+                filterPktData= self.mib.get("1.3.6.1.2.1.16.7.1.1.4." + str(filter_index))['value']
+                filterPktDataMask = self.mib.get("1.3.6.1.2.1.16.7.1.1.5." + str(filter_index))['value']
+                filterPktDataNotMask = self.mib.get("1.3.6.1.2.1.16.7.1.1.6." + str(filter_index))['value']
+                filterPktStatus = self.mib.get("1.3.6.1.2.1.16.7.1.1.7." + str(filter_index))['value']
+                filterPktStatusMask = self.mib.get("1.3.6.1.2.1.16.7.1.1.8." + str(filter_index))['value']
+                filterPktStatusNotMask = self.mib.get("1.3.6.1.2.1.16.7.1.1.9." + str(filter_index))['value']
 
                 filtro = filtro + "("
 
@@ -202,7 +214,7 @@ class filter():
             print("channelAcceptType no valido")
             raise # TODO
 
-        return channelMatches, interfaz, filtro
+        return filtro, interface
 
 
 

@@ -31,7 +31,6 @@ class RmonTableSetHandler(SetHandler):
 
 
     def test(self, oid, type, value, mib):
-
         # If the oid is already in the mib, it should be valid, I have check it during creation
         try:
             aux = oid.split(".")
@@ -104,7 +103,6 @@ class RmonTableSetHandler(SetHandler):
 
 
     def commit(self, oid, type, value, mib):
-
         # Get row index and oid prefix
         try:
             aux = oid.split(".")
@@ -120,14 +118,16 @@ class RmonTableSetHandler(SetHandler):
             if mib.has_oid(oid):
                 # Create filter
                 if value == 1:
-                    self.valid(oid, type, value, mib)
                     mib.set(oid, type, value)
+                    self.valid(row_index)
 
                 # Delete entry
                 elif value == 4:
+                    # Delete whole entry
                     for prefix in self.schema_idx:
                         oid = prefix + '.' + str(row_index)
                         mib.delete_oid(oid)
+                    self.invalid(row_index)
 
             else:
                 if value == 2:
@@ -159,10 +159,10 @@ class RmonTableSetHandler(SetHandler):
 
 
 
-    def valid(self, oid, type, value, mib):
+    def valid(self, index):
         print("CREATING FILTER")
         pass
 
-    def invalid(self, oid, type, value, mib):
+    def invalid(self, index):
         print("REMOVING FILTER")
         pass
