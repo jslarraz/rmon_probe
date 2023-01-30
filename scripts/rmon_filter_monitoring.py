@@ -9,7 +9,7 @@ interface_name = os.environ.get('interface_name', 'eth0')	# Interface
 community = os.environ.get('community', 'private')			# Comunidad
 
 # Numero de filtros
-n = 32
+n = 1
 
 
 # User with authPriv settings

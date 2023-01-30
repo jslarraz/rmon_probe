@@ -10,113 +10,83 @@ logger = logging.getLogger('rmon_probe.filter')
 logger.addHandler(NullHandler())
 # --------------------------------------------
 
-import MySQLdb
-# from scapy.all import *
-from multiprocessing import Process, Value, Array
+import threading
 import pcap
+import os
 
-class Filter():
+class FilterManager():
 
     ######################
     # Funciones Publicas #
     ######################
     
-    def __init__(self, mib, interfaces=None):
+    def __init__(self, mib):
+        print("INIT")
         # Creamos las variables
-        self.interfaces = interfaces
+        self.interfaces = self.get_interfaces()
         self.mib = mib
 
+        self._filters = {}
+        self._matches = {}
+
+        # Start filters already in MIB
+        self.start()
 
 
 
     def start(self):
+        print("START")
         # Cargamos los filtros
-        db_rmon=MySQLdb.connect(host=self.BBDD.ADDR,user=self.BBDD.USER,passwd=self.BBDD.PASS, db="rmon")
-        db_rmon.autocommit(True)
-        cursor = db_rmon.cursor()
-
-        cursor.execute("SELECT channelIndex FROM td_channelEntry WHERE channelStatus = \'1\'" )
-        result = cursor.fetchall()
-        if str(result) != "None":
-            for canal in result:
-                # Comprobamos que hay sitio en la memoria compartida
-                self.ind = self.busca_memoria()
-                if self.ind != None:
-                    status, match, interfaz, filtro = self.genera_filtro(str(canal[0]))
-                    if status == 1:
-                        self.indices[self.ind] = canal[0]
-                        self.matches[self.ind] = match
-                        self.process[self.ind] = Process(target=self.captura, args=(interfaz, filtro))
-                        self.process[self.ind].start()
-
-                    else:
-                        print("Formato de filtro erroneo")
-
-                else:
-                    print("No hay espacio en memoria para el filtro")
-
-        else:
-            print("No hay ningun filtro declarado")
+        for oid, type, value in self.mib:
+            # ChannelEntry with status valid
+            if oid.startswith("1.3.6.1.2.1.16.7.2.1.12.") and (value == 1):
+                channel_index = int(oid.split(".")[-1])
+                self.add(channel_index)
 
 
+    def add(self, channel_index):
+        print("ADD")
+        channelMatches = self.mib.get("1.3.6.1.2.1.16.7.2.1.9." + str(channel_index))
+        filter, interface = self.genera_filtro(channel_index)
+        f = Filter(filter, interface, channelMatches)
+        f.start()
+        self._filters[channel_index] = f
+
+    def delete(self, channel_index):
+        self._filters[channel_index].stop.set()
+        del(self._filters[channel_index])
+        del(self._matches[channel_index])
 
 
-
-    def add(self, index):
-        self.ind = self.busca_memoria()
-        if self.ind != None:
-            status, match, interfaz, filtro = self.genera_filtro(str(index))
-            if status == 1:
-                self.indices[self.ind] = int(index)
-                self.matches[self.ind] = match
-                self.process[self.ind] = Process(target=self.captura, args=(interfaz, filtro))
-                self.process[self.ind].start()
-                print(filtro)
-
-            else:
-                print("Formato de filtro erroneo")
-
-        else:
-            print("No hay espacio en memoria para el filtro")
+    def shutdown(self):
+        for i in self._filters.keys():
+            self._filters[i].stop.set()
 
 
-    def delete(self, index):
-
-        ind = None
-        for i in range(len(self.indices)):
-            if self.indices[i] == int(index):
-                ind = i
-
-                if ind != None:
-                    self.indices[ind] = 0
-                    self.matches[ind] = 0
-                    self.process[ind].terminate()
-
-                else:
-                    print("El filto no existia")
+    # def update(self):
+    #     db_rmon=MySQLdb.connect(host=self.BBDD.ADDR,user=self.BBDD.USER,passwd=self.BBDD.PASS, db="rmon")
+    #     db_rmon.autocommit(True)
+    #     cursor = db_rmon.cursor()
+    #
+    #     for i in range(len(self.indices)):
+    #         if self.indices[i] != 0:
+    #             cursor.execute("UPDATE td_channelEntry SET channelMatches = " + str(self.matches[i]) + " WHERE channelIndex = %s", (str(self.indices[i]),) )
+    #             #print str(self.indices[i]) + ": " + str(self.matches[i])
 
 
-    def kill(self):
-        for i in range(len(self.indices)):
-            if self.indices[i] != 0:
-                self.process[i].terminate()
-
-
-    def update(self):
-        db_rmon=MySQLdb.connect(host=self.BBDD.ADDR,user=self.BBDD.USER,passwd=self.BBDD.PASS, db="rmon")
-        db_rmon.autocommit(True)
-        cursor = db_rmon.cursor()
-
-        for i in range(len(self.indices)):
-            if self.indices[i] != 0:
-                cursor.execute("UPDATE td_channelEntry SET channelMatches = " + str(self.matches[i]) + " WHERE channelIndex = %s", (str(self.indices[i]),) )
-                #print str(self.indices[i]) + ": " + str(self.matches[i])
-
-
-
-    ######################
-    # Funciones Privadas #
-    ######################
+    def get_interfaces(self):
+        interfaces = {}
+        for interface in os.listdir("/sys/class/net"):
+            # Prevent bonding_masters to generate an exception
+            if os.path.isdir("/sys/class/net/" + str(interface)) and os.path.exists("/sys/class/net/" + str(interface) + "/ifindex"):
+                fd = open("/sys/class/net/" + str(interface) + "/ifindex")
+                try:
+                    index = str(int(fd.readline()))
+                except:
+                    continue
+                interfaces[index] = interface
+                fd.close()
+        return interfaces
 
 
     def genera_filtro(self, channel_index):
@@ -131,14 +101,11 @@ class Filter():
         if None in [channelIfIndex, channelAcceptType, channelMatches]:
             raise # TODO
 
-        # try:
-        #     interfaz = self.interfaces[str(channelIfIndex)]
-        #     # interfaz = subprocess.check_output(["snmpget", "-v", "1", "-c", "public", "localhost:162", "1.3.6.1.2.1.2.2.1.2." + str(channelIfIndex)])
-        #     # interfaz = interfaz.split("\"")
-        #     # interfaz = interfaz[1]
-        # except:
-        #     print("Error al conseguir el interfaz")
-        #     raise # TODO
+        try:
+            interface = self.interfaces[str(channelIfIndex)]
+        except:
+            print("Error to obtain interface")
+            raise # TODO
 
         # Get list of filter indexses
         indexes = []
@@ -218,13 +185,22 @@ class Filter():
 
 
 
-#    def callback(self, pkt):
+class Filter(threading.Thread):
+
+    def __init__(self, filter, interface, matches):
+        threading.Thread.__init__(self)
+        print("INIT FILTER: " + filter + " on interface: " + interface)
+        self.stop = threading.Event()
+
+        self.filter = filter
+        self.interface = interface
+        self.matches = matches
+
     def callback(self, self_pc, hdr, data):
-        self.matches[self.ind] += 1
-        
-    def captura(self, interfaz, filtro):  
-#        sniff(iface=interfaz, filter=filtro, prn=self.callback)
+        self.matches['value'] += 1
+
+    def run(self):
         pc = pcap.pcapObject()
-        pc.open_live(interfaz, 1, True, 1000)
-        pc.setfilter(filtro, True, 0)
+        pc.open_live(self.interface, 1, True, 1000)
+        pc.setfilter(self.filter, True, 0)
         pc.loop(-1, self.callback)

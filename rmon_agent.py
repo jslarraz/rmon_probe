@@ -17,29 +17,25 @@ snmpset -v 2c -c public localhost NET-SNMP-EXAMPLES-MIB::netSnmpExampleString.0 
 import pyagentx2
 from rmon_probe.rmonTableSetHandler import RmonTableSetHandler
 from rmon_probe.MIB_MySQL import MIB_MYSQL
-from rmon_probe.filter import Filter
+from rmon_probe.filter import FilterManager
 
 
 class ChannelTableSetHandler(RmonTableSetHandler):
 
     def __init__(self, schema_file, mib):
         super(ChannelTableSetHandler, self).__init__(schema_file)
-        self._filters = []
+        try:
+            self.filter_manager = FilterManager(mib)
+        except:
+            print("Error while initialization the FilterManager")
         self.mib = mib
-
-
-        for oid, type, value in mib:
-            if oid.startswith(self.status_oid):
-                row_index = oid.split(".")[-1]
-                for prefix in self.schema_idx:
-                    aux = prefix + "." + row_index
 
     def valid(self, index):
         print("VALID FILTER CALLED: %s" % (index))
-        self.filter_class = Filter(index, self.mib)
-        filtro, interfaz = self.filter_class.genera_filtro(index, self.mib)
-        print(filtro)
-        print(interfaz)
+        try:
+            self.filter_manager.add(index)
+        except:
+            pass
         #     raise ResourceUnavailableException
 
 
