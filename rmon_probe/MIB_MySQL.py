@@ -14,11 +14,12 @@ logger.addHandler(NullHandler())
 import os
 import MySQLdb
 from pyagentx2.mib import MIB
+import signal
 
 MAX_OID_CHARACTERS = 50
 
 class MIB_MYSQL(MIB):
-    def __init__(self):
+    def __init__(self, sync_freq=10):
         super(MIB_MYSQL, self).__init__()
 
         # Connect to the database
@@ -73,6 +74,13 @@ class MIB_MYSQL(MIB):
             self.data[oid] = {'name': oid, 'type': type, 'value': value}
         self.data_idx = sorted(self.data.keys(), key=lambda k: tuple(int(part) for part in k.split('.')))
 
+
+        # Set sync function
+        if sync_freq is not None:
+            self.sync_freq = sync_freq
+            signal.signal(signal.SIGALRM, self.sync)
+            signal.alarm(self.sync_freq)
+
     def set(self, oid, type, value):
         super(MIB_MYSQL, self).set(oid, type, value)
         try:
@@ -88,3 +96,10 @@ class MIB_MYSQL(MIB):
         except:
             logger.error("Error deleting entry with oid " + oid)
 
+    def sync(self, signum, frame):
+        self.MySQL_sync()
+        signal.alarm(self.sync_freq)
+
+
+    def MySQL_sync(self):
+        pass

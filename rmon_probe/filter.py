@@ -27,7 +27,6 @@ class FilterManager():
         self.mib = mib
 
         self._filters = {}
-        self._matches = {}
 
         # Start filters already in MIB
         self.start()
@@ -55,24 +54,12 @@ class FilterManager():
     def delete(self, channel_index):
         self._filters[channel_index].stop.set()
         del(self._filters[channel_index])
-        del(self._matches[channel_index])
+
 
 
     def shutdown(self):
         for i in self._filters.keys():
             self._filters[i].stop.set()
-
-
-    # def update(self):
-    #     db_rmon=MySQLdb.connect(host=self.BBDD.ADDR,user=self.BBDD.USER,passwd=self.BBDD.PASS, db="rmon")
-    #     db_rmon.autocommit(True)
-    #     cursor = db_rmon.cursor()
-    #
-    #     for i in range(len(self.indices)):
-    #         if self.indices[i] != 0:
-    #             cursor.execute("UPDATE td_channelEntry SET channelMatches = " + str(self.matches[i]) + " WHERE channelIndex = %s", (str(self.indices[i]),) )
-    #             #print str(self.indices[i]) + ": " + str(self.matches[i])
-
 
     def get_interfaces(self):
         interfaces = {}

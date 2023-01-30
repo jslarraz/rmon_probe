@@ -119,7 +119,10 @@ class RmonTableSetHandler(SetHandler):
                 # Create filter
                 if value == 1:
                     mib.set(oid, type, value)
-                    self.valid(row_index)
+                    try:
+                        self.valid(row_index)
+                    except:
+                        raise ResourceUnavailableException()
 
                 # Delete entry
                 elif value == 4:
