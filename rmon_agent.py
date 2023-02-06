@@ -35,19 +35,34 @@ class ChannelTableSetHandler(RmonTableSetHandler):
         try:
             self.filter_manager.add(index)
         except:
-            pass
-        #     raise ResourceUnavailableException
-
+            raise
 
     def invalid(self, index):
         print("INVALID FILTER CALLED: %s" % (index))
+        try:
+            self.filter_manager.delete(index)
+        except:
+            print("error delete index")
+            pass
+            # raise
+
+
+
+class MIB_Filter(MIB_MYSQL):
+
+    def MySQL_sync(self):
+        for oid, type, value in self:
+            if oid.startswith("1.3.6.1.2.1.16.7.2.1.9."):
+                self.cursor.execute(
+                    'INSERT INTO ' + self.table_name + ' (oid, type, value) VALUES ("%(oid)s", %(type)s, "%(value)s") ON DUPLICATE KEY UPDATE type=%(type)s, value="%(value)s";' % {
+                        "oid": oid, "type": type, "value": value})
 
 
 class MyAgent(pyagentx2.Agent):
 
     def __init__(self):
         super(MyAgent, self).__init__()
-        self.mib = MIB_MYSQL()
+        self.mib = MIB_Filter()
 
     def setup(self):
 

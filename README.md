@@ -1,5 +1,8 @@
 # RMON probe
-RMON probe implementation (rfc 2819) using python and libpcap. Only the filter group is implemented at this moment.
+RMON probe implementation (rfc 2819) using python and libpcap. Only the filter group is implemented at this moment. This project is a redesign of the original [rmon_probe](https://github.com/jslarraz/rmon_probe_old) that I developed during my [final year project](https://zaguan.unizar.es/record/31543?ln=en).
+
+This redesign involves a major change in the probe architecture, so that the Filter group and its functionality is implemented as an [AgentX](https://datatracker.ietf.org/doc/html/rfc2741) using the [pyagentx2](https://github.com/jslarraz/pyagentx2) library.
+
 
 ## Getting started
 
@@ -7,8 +10,10 @@ The easiest way to get started is to use this probe as a standalone docker conta
 the following command.
 
 ```
-docker run -p 161:161/udp --net=host --name rmon_probe jslarraz/rmon_probe
+docker run -p 161:161/udp --net=host --name rmon_probe jslarraz/rmon_probe:standalone
 ```
+
+This docker container is based on [this](https://hub.docker.com/r/jslarraz/netsnmp) docker image. You can configure the NetSNMP agent according to its documentation.
 
 ## Better alternatives
 
@@ -53,15 +58,6 @@ daemon config file.
 ```
 "mtu": 9000"
 ```
-
-## Community management
-
-In this project, the SNMP communities and, therefore, the access privileges, are managed through a new MIB defined for 
-this purpose, the communityManagement MIB. The agent is initialized with a default master community, "admin", with read 
-and write privileges on objects that belong to the communityManagement MIB and can be used to define new communities and 
-assign privileges to them. Thus, first step to start using the probe is to create a new community with privileges on the 
-filter group objects. The script "create_community.py" (under the scripts folder) shows how to modify the default master 
-community, "admin", and how to use this new master community to create other communities with custom access privileges.
 
 ## References
 
