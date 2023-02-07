@@ -6,7 +6,7 @@ import logging
 class NullHandler(logging.Handler):
     def emit(self, record):
         pass
-logger = logging.getLogger('pyagentx2.MIB_MySQL')
+logger = logging.getLogger('pyagentx2.mib_MySQL')
 logger.addHandler(NullHandler())
 # --------------------------------------------
 
@@ -18,17 +18,17 @@ import signal
 
 MAX_OID_CHARACTERS = 50
 
-class MIB_MYSQL(MIB):
-    def __init__(self, sync_freq=10):
-        super(MIB_MYSQL, self).__init__()
+class MIB_MySQL(MIB):
+    def __init__(self, maria_host='localhost', mariadb_user='rmon', mariadb_pass='rmon', mariadb_database='rmon', table_name='mib', sync_freq=10, auto_sync=None):
+        super(MIB_MySQL, self).__init__()
 
         # Connect to the database
-        HOST = os.environ.get('MARIADB_HOST', 'db')
-        USER = os.environ.get('MARIADB_USER', 'rmon')
-        PASS = os.environ.get('MARIADB_PASS', 'rmon')
-        DATABASE = os.environ.get('MARIADB_DATABASE', 'rmon')
+        HOST = os.environ.get('MARIADB_HOST', maria_host)
+        USER = os.environ.get('MARIADB_USER', mariadb_user)
+        PASS = os.environ.get('MARIADB_PASS', mariadb_pass)
+        DATABASE = os.environ.get('MARIADB_DATABASE', mariadb_database)
 
-        self.table_name = "mib"
+        self.table_name = table_name
 
         connection = MySQLdb.connect(host=HOST, user=USER, passwd=PASS)
         connection.autocommit(True)
@@ -66,7 +66,7 @@ class MIB_MYSQL(MIB):
                 exit(-1)
 
         # Load objects from MySQL database
-        self.cursor.execute("SELECT * FROM mib;")
+        self.cursor.execute("SELECT * FROM " + self.table_name + ";")
         result = self.cursor.fetchall()
         for oid, type, value in result:
             if (type == 2) or (type == 65):   # TODO add support for more data types
@@ -77,12 +77,16 @@ class MIB_MYSQL(MIB):
 
         # Set sync function
         if sync_freq is not None:
+            self.auto_sync = auto_sync
             self.sync_freq = sync_freq
-            signal.signal(signal.SIGALRM, self.sync)
+            signal.signal(signal.SIGALRM, self.sync_timer)
             signal.alarm(self.sync_freq)
 
     def set(self, oid, type, value):
-        super(MIB_MYSQL, self).set(oid, type, value)
+        super(MIB_MySQL, self).set(oid, type, value)
+        self.set_MySQL(oid, type, value)
+
+    def set_MySQL(self, oid, type, value):
         try:
             self.cursor.execute('INSERT INTO ' + self.table_name + ' (oid, type, value) VALUES ("%(oid)s", %(type)s, "%(value)s") ON DUPLICATE KEY UPDATE type=%(type)s, value="%(value)s";' % {"oid": oid, "type": type, "value": value})
         except:
@@ -90,16 +94,19 @@ class MIB_MYSQL(MIB):
             logger.error("Error creating/updating entry oid " + oid + " with type " + str(type) + " and value " + str(value))
 
     def delete_oid(self, oid):
-        super(MIB_MYSQL, self).delete_oid(oid)
+        super(MIB_MySQL, self).delete_oid(oid)
         try:
             self.cursor.execute('DELETE FROM ' + self.table_name + ' WHERE oid = "' + oid + '";')
         except:
             logger.error("Error deleting entry with oid " + oid)
 
-    def sync(self, signum, frame):
-        self.MySQL_sync()
+    def sync_timer(self, signum, frame):
+        self.sync()
         signal.alarm(self.sync_freq)
 
+    def sync(self):
 
-    def MySQL_sync(self):
-        pass
+        if self.auto_sync is not None:
+            for oid, type, value in self:
+                if oid.startswith(self.auto_sync):
+                    self.set_MySQL(oid, type, value)
